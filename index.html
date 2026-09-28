@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZAYAN — Inauguração | 5 Cervejas Grátis</title>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+        body { 
+            background: linear-gradient(180deg, #000000, #1a1508, #2b2010); 
+            color: white; 
+            min-height: 100vh; 
+            padding: 20px; 
+        }
+        .container { max-width: 420px; margin: 0 auto; text-align: center; }
+        
+        /* LOGÓTIPO ZAYAN */
+        .logo {
+            font-size: 42px;
+            font-weight: 900;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+        .logo-z, .logo-y, .logo-n { color: #ffd700; text-shadow: 0 0 10px #ffd700, 0 2px 4px rgba(0,0,0,0.5); }
+        .logo-a, .logo-a2 { color: #fff; }
+        .slogan {
+            color: #ffd700;
+            font-size: 14px;
+            letter-spacing: 2px;
+            margin-bottom: 20px;
+            opacity: 0.9;
+        }
+        
+        h1 { color: #ffd700; margin-bottom: 10px; font-size: 22px; }
+        h2 { font-size: 17px; margin: 15px 0 8px; color: #ffd700; }
+        .card { 
+            background: rgba(255,215,0,0.08); 
+            border: 1px solid rgba(255,215,0,0.2);
+            padding: 25px; 
+            border-radius: 15px; 
+            margin: 20px 0; 
+        }
+        input { 
+            width: 100%; padding: 12px; font-size: 16px; border: none; 
+            border-radius: 8px; margin: 8px 0; color: #222; 
+            background: #fff;
+        }
+        input.pequeno { width: 80px; text-align: center; display: inline-block; margin-left: 8px; }
+        button { 
+            background: linear-gradient(90deg, #ffd700, #ffb300);
+            color: #000; font-weight: bold; border: none; 
+            padding: 13px 25px; font-size: 16px; border-radius: 8px; 
+            cursor: pointer; width: 100%; margin-top: 8px; 
+            box-shadow: 0 4px 0 #cc9000;
+            transition: transform 0.1s;
+        }
+        button:active { transform: translateY(2px); box-shadow: 0 2px 0 #cc9000; }
+        button:disabled { background: #555; box-shadow: none; cursor: not-allowed; opacity: 0.6; }
+        .btn-admin { background: linear-gradient(90deg, #28a745, #20c997); box-shadow: 0 4px 0 #1e7e34; color: white; margin-top: 10px; }
+        .btn-liberar { background: linear-gradient(90deg, #ff9500, #ffc107); box-shadow: 0 4px 0 #cc7700; color: #000; padding: 10px; font-size: 15px; }
+        .btn-convidado { background: linear-gradient(90deg, #00b4d8, #0077b6); box-shadow: 0 4px 0 #005f8a; color: white; }
+        .qrcode-area { background: white; padding: 20px; border-radius: 10px; margin: 20px auto; display: inline-block; }
+        canvas { max-width: 260px; }
+        .contador { font-size: 36px; font-weight: bold; color: #ffd700; margin: 15px 0; }
+        .subtitulo { font-size: 14px; opacity: 0.9; margin-bottom: 10px; line-height: 1.5; }
+        .aviso { background: rgba(255,215,0,0.1); padding: 12px; border-radius: 8px; margin-top: 15px; font-size: 13px; line-height: 1.6; border-left: 3px solid #ffd700; }
+        .aviso-limite { background: rgba(220,53,69,0.15); border: 1px solid rgba(220,53,69,0.3); border-left: 3px solid #dc3545; }
+        .passo { display: none; }
+        .passo.ativo { display: block !important; }
+        #camera { width: 100%; max-width: 360px; border-radius: 10px; background: #000; margin: 15px 0; }
+        .resultado { background: rgba(40,167,69,0.15); padding: 15px; border-radius: 10px; margin-top: 15px; display: none; border: 1px solid rgba(40,167,69,0.3); }
+        .resultado.visivel { display: block; }
+        .erro { background: rgba(220,53,69,0.15); border: 1px solid rgba(220,53,69,0.3); display: none; }
+        .erro.visivel { display: block; }
+        .menu-principal { margin-top: 10px; }
+        .voltar { background: #444; box-shadow: 0 4px 0 #222; }
+        .vagas { font-size: 17px; font-weight: bold; color: #ffd700; margin: 12px 0; padding: 8px; background: rgba(255,215,0,0.1); border-radius: 8px; }
+        .vagas.cheias { color: #ff6b6b; background: rgba(255,0,0,0.1); }
+        .lista-convidados { text-align: left; margin-top: 15px; max-height: 280px; overflow-y: auto; }
+        .item-convidado { padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.08); display: flex; justify-content: space-between; align-items: center; }
+        .nome-convidado { font-weight: bold; }
+        .qtd-cervejas { color: #ffd700; font-weight: bold; }
+        .qtd-zero { color: #666; }
+        .area-liberar { margin-top: 20px; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.1); }
+        .data-evento { font-size: 13px; color: #ffd700; margin-bottom: 15px; font-weight: 500; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 🏠 MENU PRINCIPAL -->
+        <div class="passo ativo" id="menu">
+            <div class="logo">
+                <span class="logo-z">Z</span><span class="logo-a">A</span><span class="logo-y">Y</span><span class="logo-a2">A</span><span class="logo-n">N</span>
+            </div>
+            <div class="slogan">FAST FOOD • SABOR • QUALIDADE</div>
+            
+            <h1>🎉 INAUGURAÇÃO</h1>
+            <p class="data-evento">02 de Outubro de 2026 — Kilamba Kiaxi, Subzona 10</p>
+            <p class="subtitulo">Bem-vindo! Os primeiros convidados recebem <strong>5 cervejas grátis</strong> 🎁</p>
+            
+            <div class="vagas" id="contagemVagas"></div>
+            
+            <div class="card menu-principal">
+                <button class="btn-convidado" id="btnConvite" onclick="mostrarConvidado()">👤 SOU CONVIDADO</button>
+                <button class="btn-admin" onclick="mostrarAdmin()">🔐 SOU DO BALCÃO</button>
+            </div>
+            
+            <div class="aviso">
+                💡 Vagas limitadas — cadastra-te agora e garante o teu lugar!
+            </div>
+        </div>
+
+        <!-- 👤 ÁREA DO CONVIDADO -->
+        <div class="passo" id="areaConvidado">
+            <button class="voltar" onclick="voltarMenu()">← Voltar</button>
+            
+            <div class="logo" style="font-size:32px; margin-bottom:5px;">
+                <span class="logo-z">Z</span><span class="logo-a">A</span><span class="logo-y">Y</span><span class="logo-a2">A</span><span class="logo-n">N</span>
+            </div>
+            <div class="slogan" style="margin-bottom:15px;">FAST FOOD</div>
+            
+            <h1 id="tituloConvite">🎉 BEM-VINDO!</h1>
+            <p class="subtitulo">Tens direito a <strong>5 CERVEJAS GRÁTIS</strong>! Digita o teu nome:</p>
+            
+            <div class="card" id="formConvite">
+                <input type="text" id="nomeConvidado" placeholder="O teu nome completo">
+                <button onclick="gerarMeuQR()">GERAR MEU CÓDIGO ✅</button>
+                
+                <div id="meuCodigo" style="display:none; margin-top:20px;">
+                    <p>O teu código — apresenta no balcão:</p>
+                    <div class="qrcode-area">
+                        <canvas id="qrConvidado"></canvas>
+                    </div>
+                    <p class="contador" id="meuContador">5 / 5 🍺</p>
+                    <p style="font-size:12px; opacity:0.7;">Guarda esta página! É o teu bilhete 🎫</p>
+                </div>
+            </div>
+            
+            <div class="card aviso-limite" id="limiteAtingido" style="display:none;">
+                <h3>❌ VAGAS ESGOTADAS!</h3>
+                <p>Já foram preenchidas todas as vagas disponíveis.</p>
+                <p style="margin-top:8px;">Obrigado pela visita ao <strong>ZAYAN</strong>! 🥂</p>
+            </div>
+        </div>
+
+        <!-- 🔐 ÁREA DO ADMINISTRADOR -->
+        <div class="passo" id="areaAdmin">
+            <button class="voltar" onclick="voltarMenu()">← Voltar</button>
+            
+            <div class="logo" style="font-size:32px; margin-bottom:5px;">
+                <span class="logo-z">Z</span><span class="logo-a">A</span><span class="logo-y">Y</span><span class="logo-a2">A</span><span class="logo-n">N</span>
+            </div>
+            <div class="slogan" style="margin-bottom:15px;">PAINEL DE CONTROLO</div>
+            
+            <h1>🔐 ACESSO DO BALCÃO</h1>
+            
+            <div class="card" id="formSenha">
+                <input type="password" id="senhaAdmin" placeholder="Digita a senha">
+                <button class="btn-admin" onclick="verificarSenha()">ENTRAR 🔑</button>
+            </div>
+            
+            <div id="areaLeitura" style="display:none;">
+                <h2>📋 Lista de Convidados</h2>
+                <div class="card lista-convidados" id="listaConvidados">
+                    <p style="opacity:0.6;">Nenhum convidado cadastrado ainda.</p>
+                </div>
+
+                <h2>📷 Ler Código QR</h2>
+                <p style="font-size:13px; opacity:0.8;">Aponta a câmera para o código do convidado:</p>
+                <video id="camera" autoplay playsinline></video>
+                <button onclick="pararCamera()" style="background:#dc3545; box-shadow: 0 4px 0 #a71d2a; color:white;">⏹️ Parar Câmera</button>
+                
+                <div class="resultado" id="resultadoLeitura">
+                    <h3 id="nomeLido"></h3>
+                    <p>Cervejas restantes:</p>
+                    <p class="contador" id="contadorLido"></p>
+                    <button class="btn-admin" onclick="descontarAdmin()">🍺 DESCONTAR 1</button>
+                </div>
+                <div class="erro resultado" id="erroLeitura">
+                    <p>❌ Código não reconhecido ou já sem cervejas!</p>
+                </div>
+
+                <div class="card area-liberar">
+                    <h2>🔓 Liberar Mais Vagas</h2>
+                    <p style="font-size:14px;">Disponíveis: <strong id="vagasAtuais"></strong></p>
+                    <button class="btn-liberar" onclick="liberarMaisVagas()">+ 5 VAGAS</button>
+                    <button class="btn-liberar" style="background:linear-gradient(90deg, #00b4d8, #0096c7); box-shadow: 0 4px 0 #00779e; color:white;" onclick="liberarQuantidade()">+ Outra Quantidade</button>
+                    <input type="number" id="novaQuantidade" class="pequeno" min="1" placeholder="Nº">
+                </div>
+            </div>
+        </div>
+    </div>
+
+<script>
+const SENHA_ADMIN = "4321";
+const LIMITE_INICIAL = 14;
+let LIMITE_CONVIDADOS = LIMITE_INICIAL;
+let convidados = JSON.parse(localStorage.getItem("convidados") || "{}");
+let streamCamera = null;
+
+// --- FUNÇÕES DE NAVEGAÇÃO CORRIGIDAS ---
+function mostrarConvidado() {
+    // Esconder todos
+    document.getElementById("menu").classList.remove("ativo");
+    document.getElementById("areaAdmin").classList.remove("ativo");
+    // Mostrar convidado
+    document.getElementById("areaConvidado").classList.add("ativo");
+    
+    const total = Object.keys(convidados).length;
+    
+    // Se já tem cadastro, mostra o código
+    if (localStorage.getItem("meuCodigoDados")) {
+        const dados = JSON.parse(localStorage.getItem("meuCodigoDados"));
+        document.getElementById("formConvite").style.display = "block";
+        document.getElementById("limiteAtingido").style.display = "none";
+        document.getElementById("nomeConvidado").value = dados.nome;
+        mostrarMeuCodigo(dados);
+        return;
+    }
+    
+    // Sem vagas
+    if (total >= LIMITE_CONVIDADOS) {
+        document.getElementById("formConvite").style.display = "none";
+        document.getElementById("limiteAtingido").style.display = "block";
+        return;
+    }
+    
+    // Tem vaga
+    document.getElementById("formConvite").style.display = "block";
+    document.getElementById("limiteAtingido").style.display = "none";
+}
+
+function mostrarAdmin() {
+    document.getElementById("menu").classList.remove("ativo");
+    document.getElementById("areaConvidado").classList.remove("ativo");
+    document.getElementById("areaAdmin").classList.add("ativo");
+    atualizarListaConvidados();
+}
+
+function voltarMenu() {
+    pararCamera();
+    document.querySelectorAll(".passo").forEach(p => p.classList.remove("ativo"));
+    document.getElementById("menu").classList.add("ativo");
+    document.getElementById("areaLeitura").style.display = "none";
+    atualizarContagemVagas();
+}
+
+// --- RESTO DAS FUNÇÕES ---
+function atualizarContagemVagas() {
+    const total = Object.keys(convidados).length;
+    const vagasRestantes = LIMITE_CONVIDADOS - total;
+    const el = document.getElementById("contagemVagas");
+    
+    if (vagasRestantes > 0) {
+        el.className = "vagas";
+        el.textContent = `${vagasRestantes} vaga(s) disponível(is) de ${LIMITE_CONVIDADOS}`;
+        document.getElementById("btnConvite").disabled = false;
+    } else {
+        el.className = "vagas cheias";
+        el.textContent = `⚠️ ${LIMITE_CONVIDADOS} vagas preenchidas`;
+        document.getElementById("btnConvite").disabled = true;
+    }
+    
+    const vagasAtuais = document.getElementById("vagasAtuais");
+    if (vagasAtuais) vagasAtuais.textContent = `${vagasRestantes} de ${LIMITE_CONVIDADOS}`;
+}
+
+function atualizarListaConvidados() {
+    const container = document.getElementById("listaConvidados");
+    const ids = Object.keys(convidados);
+    if (ids.length === 0) {
+        container.innerHTML = '<p style="opacity:0.6;">Nenhum convidado cadastrado ainda.</p>';
+        return;
+    }
+    ids.sort((a, b) => convidados[b].quantidade - convidados[a].quantidade);
+    container.innerHTML = ids.map(id => {
+        const c = convidados[id];
+        return `<div class="item-convidado"><span class="nome-convidado">${c.nome}</span><span class="qtd-cervejas ${c.quantidade===0?'qtd-zero':''}">${c.quantidade}/5 🍺</span></div>`;
+    }).join('');
+}
+
+function liberarMaisVagas() {
+    LIMITE_CONVIDADOS += 5;
+    localStorage.setItem("limiteVagas", LIMITE_CONVIDADOS);
+    alert(`✅ +5 vagas liberadas! Total: ${LIMITE_CONVIDADOS}`);
+    atualizarContagemVagas();
+}
+
+function liberarQuantidade() {
+    const qtd = parseInt(document.getElementById("novaQuantidade").value);
+    if (!qtd || qtd < 1) { alert("Número inválido!"); return; }
+    LIMITE_CONVIDADOS += qtd;
+    localStorage.setItem("limiteVagas", LIMITE_CONVIDADOS);
+    alert(`✅ +${qtd} vagas liberadas! Total: ${LIMITE_CONVIDADOS}`);
+    document.getElementById("novaQuantidade").value = "";
+    atualizarContagemVagas();
+}
+
+function gerarMeuQR() {
+    const totalAtual = Object.keys(convidados).length;
+    if (totalAtual >= LIMITE_CONVIDADOS) { alert("❌ Sem vagas!"); voltarMenu(); return; }
+    
+    const nome = document.getElementById("nomeConvidado").value.trim();
+    if (!nome) { alert("Digita o nome!"); return; }
+    
+    const id = "CONV-" + Math.random().toString(36).substring(2, 10).toUpperCase();
+    const dados = { id, nome, quantidade: 5 };
+    convidados[id] = dados;
+    localStorage.setItem("convidados", JSON.stringify(convidados));
+    localStorage.setItem("meuCodigoDados", JSON.stringify(dados));
+    
+    mostrarMeuCodigo(dados);
+    atualizarContagemVagas();
+    atualizarListaConvidados();
+}
+
+function mostrarMeuCodigo(dados) {
+    document.getElementById("meuCodigo").style.display = "block";
+    document.getElementById("meuContador").textContent = dados.quantidade + " / 5 🍺";
+    QRCode.toCanvas(document.getElementById("qrConvidado"), 
+        JSON.stringify({ id: dados.id, nome: dados.nome }), 
+        { width: 240, margin: 2 },
+        err => err && console.error(err)
+    );
+}
+
+function verificarSenha() {
+    const senha = document.getElementById("senhaAdmin").value.trim();
+    if (senha === SENHA_ADMIN) {
+        document.getElementById("formSenha").style.display = "none";
+        document.getElementById("areaLeitura").style.display = "block";
+        atualizarListaConvidados();
+        iniciarCamera();
+    } else {
+        alert("❌ Senha incorreta!");
+    }
+}
+
+async function iniciarCamera() {
+    try {
+        streamCamera = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+        const video = document.getElementById("camera");
+        video.srcObject = streamCamera;
+        video.onloadedmetadata = () => {
+            const canvas = document.createElement("canvas");
+            const ctx = canvas.getContext("2d");
+            setInterval(() => {
+                if (!video.videoWidth) return;
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                ctx.drawImage(video, 0, 0);
+                const codigo = jsQR(ctx.getImageData(0,0,canvas.width,canvas.height).data, canvas.width, canvas.height);
+                if (codigo) {
+                    try {
+                        const d = JSON.parse(codigo.data);
+                        if (d.id && convidados[d.id]) mostrarResultado(convidados[d.id]);
+                    } catch {}
+                }
+            }, 500);
+        };
+    } catch { alert("❌ Não foi possível acessar a câmera!"); }
+}
+
+function pararCamera() {
+    if (streamCamera) streamCamera.getTracks().forEach(t => t.stop());
+    streamCamera = null;
+}
+
+function mostrarResultado(dados) {
+    document.getElementById("resultadoLeitura").classList.add("visivel");
+    document.getElementById("erroLeitura").classList.remove("visivel");
+    document.getElementById("nomeLido").textContent = dados.nome;
+    document.getElementById("contadorLido").textContent = dados.quantidade + " / 5 🍺";
+    window.idSelecionado = dados.id;
+}
+
+function descontarAdmin() {
+    const id = window.idSelecionado;
+    if (!id || !convidados[id]) return alert("Leia o código primeiro!");
+    if (convidados[id].quantidade > 0) {
+        convidados[id].quantidade--;
+        localStorage.setItem("convidados", JSON.stringify(convidados));
+        alert("✅ Descontado! Restam: " + convidados[id].quantidade);
+        mostrarResultado(convidados[id]);
+        atualizarListaConvidados();
+    } else {
+        alert("❌ Sem mais cervejas!");
+    }
+}
+
+window.onload = function() {
+    const limiteSalvo = localStorage.getItem("limiteVagas");
+    if (limiteSalvo) LIMITE_CONVIDADOS = parseInt(limiteSalvo);
+    atualizarContagemVagas();
+};
+</script>
+</body>
+</html>
