@@ -1,0 +1,497 @@
+<!--
+  ═══════════════════════════════════════════════════════════════════
+  PEPA — Plataforma de Economia Petrolífera Angolana
+  Relatório autónomo e FUNCIONAL (HTML + CSS + JavaScript + Chart.js)
+  ───────────────────────────────────────────────────────────────────
+  Não requer servidor nem build: basta abrir este ficheiro no browser.
+  Calcula em tempo real a Regressão Linear, o Random Forest e a
+  Conjectura de Collatz, e gera a previsão 2027-2033.
+
+  COMO PUBLICAR NO GITHUB (GitHub Pages):
+    1. Guarde este ficheiro como "index.html" na raiz do repositório
+    2. git init && git add . && git commit -m "PEPA report"
+    3. git branch -M main && git remote add origin <URL_DO_REPO>
+    4. git push -u origin main
+    5. No GitHub: Settings > Pages > Deploy from a branch > main / (root)
+    6. Aceda a https://SEU_USERNAME.github.io/PEPA-Angola/
+  ═══════════════════════════════════════════════════════════════════
+-->
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PEPA — Relatório ML da Economia Petrolífera Angolana</title>
+<meta name="description" content="PEPA — Relatório autónomo de análise e previsão do sector petrolífero angolano: Regressão Linear, Random Forest e Conjectura de Collatz (2000-2033)." />
+<meta property="og:title" content="PEPA — Relatório ML da Economia Petrolífera Angolana" />
+<meta property="og:description" content="Análise e previsão do IEPA/OSEGI com Machine Learning e Conjectura de Collatz." />
+<meta property="og:type" content="website" />
+<style>
+  :root{
+    --bg:#0a0a0a; --card:#111111; --border:#222222; --primary:#cc2222;
+    --gold:#f5c518; --green:#4ade80; --orange:#e67e22; --text:#f0f0f0;
+    --muted:#888888; --radius:12px; --font:'Segoe UI',system-ui,sans-serif;
+    --mono:'Cascadia Code','Consolas',monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:100vh;}
+  header{background:linear-gradient(135deg,#1a0000,#0d0d0d);border-bottom:1px solid var(--primary);
+    padding:22px 40px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;}
+  .logo{display:flex;align-items:center;gap:16px;}
+  .logo-icon{width:54px;height:54px;border-radius:14px;background:linear-gradient(135deg,var(--primary),#7f1010);
+    display:flex;align-items:center;justify-content:center;font-size:22px;box-shadow:0 0 20px rgba(180,30,30,.5);}
+  .logo-text h1{font-size:26px;font-weight:900;letter-spacing:.15em;color:#fff;}
+  .logo-text p{font-size:10px;color:var(--muted);letter-spacing:.22em;text-transform:uppercase;margin-top:2px;}
+  .header-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+  .badge{background:rgba(180,30,30,.2);border:1px solid rgba(180,30,30,.4);color:var(--primary);font-size:11px;padding:4px 12px;border-radius:20px;}
+  .lang-btn{background:transparent;border:1px solid var(--border);color:var(--muted);font-size:11px;padding:5px 12px;border-radius:8px;cursor:pointer;transition:.2s;}
+  .lang-btn.active{border-color:var(--primary);color:var(--primary);}
+  main{max-width:1240px;margin:0 auto;padding:36px 22px;}
+  .metrics-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin-bottom:28px;}
+  .metric-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;transition:border-color .2s;}
+  .metric-card:hover{border-color:rgba(180,30,30,.4);}
+  .metric-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;}
+  .metric-value{font-size:24px;font-weight:700;font-family:var(--mono);color:var(--primary);}
+  .metric-sub{font-size:11px;color:var(--muted);margin-top:4px;}
+  .section{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:22px;overflow:hidden;}
+  .section-header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+  .section-title{font-size:14px;font-weight:600;}
+  .section-badge{font-size:10px;background:rgba(180,30,30,.15);color:var(--primary);border:1px solid rgba(180,30,30,.25);padding:2px 8px;border-radius:6px;font-family:var(--mono);}
+  table{width:100%;border-collapse:collapse;}
+  th{background:rgba(255,255,255,.03);font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;padding:10px 16px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap;}
+  td{font-size:13px;padding:9px 16px;border-bottom:1px solid rgba(255,255,255,.04);font-family:var(--mono);}
+  tr:last-child td{border-bottom:none;}
+  tr:hover td{background:rgba(255,255,255,.02);}
+  .val-primary{color:var(--primary);font-weight:600;}
+  .val-gold{color:var(--gold);}
+  .val-green{color:var(--green);}
+  .scroll{overflow-x:auto;}
+  .charts-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(360px,1fr));gap:20px;margin-bottom:22px;}
+  .chart-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:18px;}
+  .chart-title{font-size:13px;font-weight:600;margin-bottom:14px;color:#ccc;}
+  .chart-container{position:relative;height:250px;}
+  .bar-list{display:flex;flex-direction:column;gap:8px;}
+  .bar-item{display:flex;align-items:center;gap:10px;}
+  .bar-name{font-size:11px;color:var(--muted);width:170px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .bar-track{flex:1;height:6px;background:rgba(255,255,255,.06);border-radius:3px;overflow:hidden;}
+  .bar-fill{height:100%;background:var(--primary);border-radius:3px;transition:width .8s ease;}
+  .bar-val{font-size:10px;font-family:var(--mono);color:var(--muted);width:44px;text-align:right;}
+  .collatz-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px;}
+  .collatz-stat{background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:8px;padding:12px;text-align:center;}
+  .collatz-stat-label{font-size:10px;color:var(--muted);text-transform:uppercase;}
+  .collatz-stat-val{font-size:18px;font-weight:700;color:var(--gold);font-family:var(--mono);margin-top:4px;}
+  .controls{display:flex;gap:16px;align-items:flex-end;padding:18px 20px;flex-wrap:wrap;}
+  .controls label{display:flex;flex-direction:column;gap:6px;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;}
+  .controls select{background:#1a1a1a;border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:8px;font-family:var(--mono);font-size:13px;min-width:170px;}
+  .run-btn{background:var(--primary);border:none;color:#fff;padding:10px 22px;border-radius:8px;font-weight:600;font-size:13px;cursor:pointer;transition:.2s;}
+  .run-btn:hover{background:#a81c1c;}
+  .summary{padding:16px 20px;font-size:13px;color:#ccc;border-top:1px solid var(--border);}
+  .summary b{color:var(--gold);font-family:var(--mono);}
+  footer{text-align:center;padding:30px 24px;border-top:1px solid var(--border);margin-top:36px;}
+  footer p{font-size:11px;color:var(--muted);}
+  .angola-strip{display:flex;align-items:center;justify-content:center;gap:4px;margin-top:12px;}
+  .strip{height:3px;width:40px;border-radius:2px;}
+  @media(max-width:640px){header{padding:18px 20px;} main{padding:24px 14px;} .bar-name{width:110px;}}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+<noscript><p style="padding:40px;text-align:center;color:#888">Este relatório requer JavaScript activado.</p></noscript>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">🛢</div>
+    <div class="logo-text">
+      <h1>PEPA</h1>
+      <p id="tagline">Plataforma de Economia Petrolífera Angolana</p>
+    </div>
+  </div>
+  <div class="header-actions">
+    <span class="badge">ML Analytics · Angola · 2000–2033</span>
+    <button class="lang-btn active" id="btn-pt" type="button">PT</button>
+    <button class="lang-btn" id="btn-en" type="button">EN</button>
+  </div>
+</header>
+
+<main>
+  <div class="metrics-grid">
+    <div class="metric-card"><div class="metric-label" data-i18n="kpi_gdp">PIB Angola (2025)</div><div class="metric-value" id="kpi-gdp">—</div><div class="metric-sub">Bn USD · INE / BNA</div></div>
+    <div class="metric-card"><div class="metric-label" data-i18n="kpi_barrel">Preço do Barril (2025)</div><div class="metric-value" id="kpi-barrel" style="color:var(--gold)">—</div><div class="metric-sub">USD / barril · Brent</div></div>
+    <div class="metric-card"><div class="metric-label">R² Linear Regression</div><div class="metric-value" id="kpi-lr">—</div><div class="metric-sub" data-i18n="kpi_r2sub">Coeficiente de determinação (teste)</div></div>
+    <div class="metric-card"><div class="metric-label">R² Random Forest</div><div class="metric-value" id="kpi-rf">—</div><div class="metric-sub" data-i18n="kpi_r2sub">Coeficiente de determinação (teste)</div></div>
+  </div>
+
+  <div class="section">
+    <div class="section-header"><div class="section-title" data-i18n="ctrl_title">Configuração da Simulação</div></div>
+    <div class="controls">
+      <label><span data-i18n="ctrl_collatz">Collatz n</span>
+        <select id="sel-n">
+          <option value="10">n = 10 (6 passos · pico 16)</option>
+          <option value="64">n = 64 (6 passos · pico 64)</option>
+          <option value="3">n = 3 (7 passos · pico 16)</option>
+          <option value="21">n = 21 (7 passos · pico 64)</option>
+          <option value="128">n = 128 (7 passos · pico 128)</option>
+        </select>
+      </label>
+      <label><span data-i18n="ctrl_policy">Política Governamental</span>
+        <select id="sel-policy">
+          <option value="0.88">—</option>
+          <option value="1" selected>—</option>
+          <option value="1.08">—</option>
+        </select>
+      </label>
+      <button class="run-btn" id="btn-run" type="button" data-i18n="ctrl_run">Executar Simulação</button>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-header">
+      <div class="section-title" data-i18n="hist_title">Dados Históricos Angola (2000–2025)</div>
+      <span class="section-badge" data-i18n="hist_badge">26 anos</span>
+    </div>
+    <div class="scroll">
+      <table>
+        <thead><tr>
+          <th data-i18n="th_year">Ano</th><th data-i18n="th_gdp">PIB (Bn$)</th><th data-i18n="th_barrel">Barril ($)</th>
+          <th data-i18n="th_prod">Prod. (Kb/d)</th><th data-i18n="th_fx">Câmbio (AOA/$)</th>
+          <th data-i18n="th_inf">Inflação (%)</th><th data-i18n="th_exp">Export. Pet. (Bn$)</th>
+        </tr></thead>
+        <tbody id="data-table-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="charts-grid">
+    <div class="chart-card">
+      <div class="chart-title" data-i18n="chart_gdp">PIB Angola — Evolução 2000-2025</div>
+      <div class="chart-container"><canvas id="gdpChart"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title" data-i18n="chart_oil">Preço do Barril vs Exportações Petrolíferas</div>
+      <div class="chart-container"><canvas id="oilChart"></canvas></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-header"><div class="section-title" data-i18n="metrics_title">Comparação dos Modelos ML</div></div>
+    <div class="scroll">
+      <table>
+        <thead><tr>
+          <th data-i18n="th_model">Modelo</th><th data-i18n="th_r2tr">R² Treino</th><th data-i18n="th_r2te">R² Teste</th>
+          <th data-i18n="th_rmse">RMSE</th><th data-i18n="th_mae">MAE</th>
+        </tr></thead>
+        <tbody id="metrics-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="charts-grid">
+    <div class="chart-card">
+      <div class="chart-title" data-i18n="imp_title">Importância das Features (Random Forest)</div>
+      <div class="bar-list" id="importance-bars"></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title" data-i18n="col_title">Conjectura de Collatz</div>
+      <div class="collatz-grid">
+        <div class="collatz-stat"><div class="collatz-stat-label" data-i18n="col_steps">Passos</div><div class="collatz-stat-val" id="col-steps">—</div></div>
+        <div class="collatz-stat"><div class="collatz-stat-label" data-i18n="col_peak">Pico</div><div class="collatz-stat-val" id="col-peak">—</div></div>
+        <div class="collatz-stat"><div class="collatz-stat-label" data-i18n="col_mean">Média</div><div class="collatz-stat-val" id="col-mean">—</div></div>
+      </div>
+      <div class="chart-container" style="height:190px"><canvas id="collatzChart"></canvas></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-header">
+      <div class="section-title" data-i18n="fc_title">Previsão IEPA/OSEGI 2027–2033</div>
+      <span class="section-badge" id="fc-badge">Collatz n=10</span>
+    </div>
+    <div class="chart-card" style="border:none;border-radius:0">
+      <div class="chart-container" style="height:280px"><canvas id="fcChart"></canvas></div>
+    </div>
+    <div class="scroll">
+      <table>
+        <thead><tr>
+          <th data-i18n="th_fyear">Ano</th><th>LR</th><th>RF</th><th data-i18n="th_ens">Ensemble</th>
+          <th>Collatz</th><th data-i18n="th_phase">Fase</th>
+        </tr></thead>
+        <tbody id="fc-body"></tbody>
+      </table>
+    </div>
+    <div class="summary" id="fc-summary"></div>
+  </div>
+</main>
+
+<footer>
+  <p data-i18n="footer">PEPA © — Plataforma de Economia Petrolífera Angolana · ML Analytics</p>
+  <div class="angola-strip">
+    <div class="strip" style="background:#cc2222"></div>
+    <div class="strip" style="background:#111"></div>
+    <div class="strip" style="background:#f5c518;width:16px"></div>
+    <span style="font-size:9px;color:#555;margin:0 6px;letter-spacing:.2em">ANGOLA</span>
+    <div class="strip" style="background:#f5c518;width:16px"></div>
+    <div class="strip" style="background:#111"></div>
+    <div class="strip" style="background:#cc2222"></div>
+  </div>
+</footer>
+
+<script>
+/* ══════════════ 1. DADOS HISTÓRICOS ANGOLA (2000-2025) ══════════════ */
+var YEARS = [2000,2001,2002,2003,2004,2005,2006,2007,2008,2009,2010,2011,2012,2013,2014,2015,2016,2017,2018,2019,2020,2021,2022,2023,2024,2025];
+var PIB    = [9.1,8.9,11.5,14.1,19.8,28.9,41.7,60.4,84.2,75.5,82.5,104.3,115.3,124.2,126.8,102.6,95.3,122.1,101.4,89.4,53.6,72.5,106.7,84.7,92.3,97.8];
+var BARREL = [28.5,24.4,25.0,28.8,38.3,54.6,65.4,72.6,97.3,61.7,79.6,111.3,111.7,108.7,99.0,52.4,44.1,54.7,71.3,64.2,41.8,70.9,99.0,82.5,78.1,74.3];
+var PROD   = [746,742,895,877,989,1244,1428,1693,1900,1784,1767,1660,1728,1711,1716,1767,1722,1632,1505,1382,1224,1124,1175,1120,1100,1080];
+var FX     = [9.2,22.4,43.5,75.0,83.5,87.0,80.4,75.0,75.0,79.3,91.9,93.9,95.8,97.0,97.6,135.3,165.9,165.9,308.6,364.8,578.3,631.4,460.6,828.8,880.0,960.0];
+var INF    = [325.0,152.6,105.6,98.2,43.6,23.0,13.3,12.2,12.5,13.7,14.5,13.5,10.3,8.8,7.3,10.3,32.4,29.8,19.6,17.1,22.3,25.8,21.4,13.6,11.8,9.4];
+var EXP    = [7.9,6.5,8.2,9.0,13.0,23.0,30.7,44.4,66.3,40.1,47.9,65.8,70.1,68.2,57.8,33.1,27.6,33.6,40.8,34.7,19.0,30.1,43.2,35.8,32.5,30.8];
+var IDE    = [879,2146,1672,3506,1449,-1193,-259,-925,1679,-3289,-3227,-3076,-6788,-6807,1946,-2293,4104,-7397,-5732,-4097,-1866,-3430,-2905,-1500,-1200,850];
+var POL    = [0.3,0.3,0.4,0.4,0.5,0.5,0.6,0.6,0.7,0.4,0.5,0.6,0.6,0.6,0.6,0.4,0.4,0.5,0.5,0.5,0.3,0.5,0.6,0.5,0.5,0.6];
+var ECON = ['barril','prod','cambio','inflacao','expPet','ide','pol'];
+var FEAT_LABELS = {
+  pt:['Preço Barril','Produção Diária','Câmbio AOA/USD','Inflação','Export. Petróleo','Investimento (IDE)','Política Gov.','Collatz (norm.)','Collatz (paridade)'],
+  en:['Barrel Price','Daily Production','AOA/USD Rate','Inflation','Oil Exports','Investment (FDI)','Gov. Policy','Collatz (norm.)','Collatz (parity)']
+};
+var DATA = YEARS.map(function(y,i){ return {ano:y,pib:PIB[i],barril:BARREL[i],prod:PROD[i],cambio:FX[i],inflacao:INF[i],expPet:EXP[i],ide:IDE[i],pol:POL[i]}; });
+
+/* ══════════════ 2. UTILITÁRIOS ══════════════ */
+function mean(a){ var s=0; for(var i=0;i<a.length;i++)s+=a[i]; return s/a.length; }
+function sd(a){ var m=mean(a),s=0; for(var i=0;i<a.length;i++)s+=(a[i]-m)*(a[i]-m); return Math.sqrt(s/a.length); }
+function variance(a){ var m=mean(a),s=0; for(var i=0;i<a.length;i++)s+=(a[i]-m)*(a[i]-m); return s/a.length; }
+function mulberry32(a){ return function(){ a|=0; a=a+0x6D2B79F5|0; var t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
+var RNG = mulberry32(42);
+function solve(A,b){ var n=b.length, M=A.map(function(r,i){ return r.concat([b[i]]); });
+  for(var i=0;i<n;i++){ var p=i; for(var k=i+1;k<n;k++){ if(Math.abs(M[k][i])>Math.abs(M[p][i]))p=k; }
+    var tp=M[i]; M[i]=M[p]; M[p]=tp; var piv=M[i][i]||1e-12;
+    for(var j=i;j<=n;j++)M[i][j]/=piv;
+    for(var k=0;k<n;k++){ if(k!==i){ var f=M[k][i]; for(var j2=i;j2<=n;j2++)M[k][j2]-=f*M[i][j2]; } } }
+  return M.map(function(r){ return r[n]; }); }
+
+/* ══════════════ 3. CONJECTURA DE COLLATZ ══════════════ */
+function collatz(n){ var s=[n]; while(n!==1){ n = (n%2===0) ? n/2 : 3*n+1; s.push(n); } return s; }
+
+/* ══════════════ 4. RANDOM FOREST (árvores de regressão + bagging) ══════════════ */
+function buildTree(X,y,depth,maxDepth,nFeat,imp){
+  if(depth>=maxDepth||X.length<4){ return {v:mean(y)}; }
+  var idx=[],nF=X[0].length; for(var i=0;i<nF;i++)idx.push(i);
+  for(var i2=idx.length-1;i2>0;i2--){ var j=Math.floor(RNG()*(i2+1)); var tmp=idx[i2]; idx[i2]=idx[j]; idx[j]=tmp; }
+  var sub=idx.slice(0,nFeat), parentLoss=variance(y)*y.length, best=null;
+  for(var s=0;s<sub.length;s++){ var f=sub[s], vals=[];
+    for(var k=0;k<X.length;k++){ if(vals.indexOf(X[k][f])<0)vals.push(X[k][f]); }
+    vals.sort(function(a,b){ return a-b; });
+    for(var q=0;q<vals.length-1;q++){ var thr=(vals[q]+vals[q+1])/2, Ly=[],Ry=[];
+      for(var k2=0;k2<X.length;k2++){ (X[k2][f]<=thr?Ly:Ry).push(y[k2]); }
+      if(Ly.length<2||Ry.length<2)continue;
+      var loss=variance(Ly)*Ly.length+variance(Ry)*Ry.length;
+      if(!best||loss<best.loss)best={f:f,thr:thr,loss:loss}; } }
+  if(!best)return {v:mean(y)};
+  imp[best.f]+=(parentLoss-best.loss);
+  var LX=[],Ly=[],RX=[],Ry=[];
+  for(var k3=0;k3<X.length;k3++){ if(X[k3][best.f]<=best.thr){ LX.push(X[k3]);Ly.push(y[k3]); } else { RX.push(X[k3]);Ry.push(y[k3]); } }
+  return {f:best.f,thr:best.thr,l:buildTree(LX,Ly,depth+1,maxDepth,nFeat,imp),r:buildTree(RX,Ry,depth+1,maxDepth,nFeat,imp)};
+}
+function treePredict(t,r){ return (t.v!==undefined) ? t.v : (r[t.f]<=t.thr ? treePredict(t.l,r) : treePredict(t.r,r)); }
+function trainRF(X,y,nTrees,maxDepth){
+  var nFeat=Math.max(2,Math.round(Math.sqrt(X[0].length))), imp=new Array(X[0].length).fill(0), trees=[];
+  for(var t=0;t<nTrees;t++){ var bx=[],by=[];
+    for(var i=0;i<X.length;i++){ var k=Math.floor(RNG()*X.length); bx.push(X[k]); by.push(y[k]); }
+    trees.push(buildTree(bx,by,0,maxDepth,nFeat,imp)); }
+  var tot=imp.reduce(function(a,b){ return a+b; },0)||1;
+  return { predict:function(r){ return mean(trees.map(function(t){ return treePredict(t,r); })); },
+           importance:imp.map(function(v){ return v/tot; }) };
+}
+
+/* ══════════════ 5. MÉTRICAS ══════════════ */
+function r2(yt,yp){ var m=mean(yt),ss=0,st=0; for(var i=0;i<yt.length;i++){ ss+=(yt[i]-yp[i])*(yt[i]-yp[i]); st+=(yt[i]-m)*(yt[i]-m); } return st===0?0:1-ss/st; }
+function rmse(yt,yp){ var s=0; for(var i=0;i<yt.length;i++)s+=(yt[i]-yp[i])*(yt[i]-yp[i]); return Math.sqrt(s/yt.length); }
+function mae(yt,yp){ var s=0; for(var i=0;i<yt.length;i++)s+=Math.abs(yt[i]-yp[i]); return s/yt.length; }
+
+/* ══════════════ 6. MOTOR DE PREVISÃO ══════════════ */
+var LANG='pt', T={};
+T.pt={ tagline:'Plataforma de Economia Petrolífera Angolana',
+  kpi_gdp:'PIB Angola (2025)', kpi_barrel:'Preço do Barril (2025)', kpi_r2sub:'Coeficiente de determinação (teste)',
+  ctrl_title:'Configuração da Simulação', ctrl_collatz:'Collatz n', ctrl_policy:'Política Governamental', ctrl_run:'Executar Simulação',
+  policies:['Péssima (-12%)','Moderada (0%)','Óptima (+8%)'],
+  hist_title:'Dados Históricos Angola (2000–2025)', hist_badge:'26 anos',
+  th_year:'Ano', th_gdp:'PIB (Bn$)', th_barrel:'Barril ($)', th_prod:'Prod. (Kb/d)', th_fx:'Câmbio (AOA/$)', th_inf:'Inflação (%)', th_exp:'Export. Pet. (Bn$)',
+  chart_gdp:'PIB Angola — Evolução 2000-2025', chart_oil:'Preço do Barril vs Exportações Petrolíferas',
+  metrics_title:'Comparação dos Modelos ML', th_model:'Modelo', th_r2tr:'R² Treino', th_r2te:'R² Teste', th_rmse:'RMSE', th_mae:'MAE',
+  imp_title:'Importância das Features (Random Forest)', col_title:'Conjectura de Collatz',
+  col_steps:'Passos', col_peak:'Pico', col_mean:'Média',
+  fc_title:'Previsão IEPA/OSEGI 2027–2033', th_ens:'Ensemble', th_phase:'Fase',
+  phases:{peak:'Pico',normal:'Normal',trough:'Vale'},
+  summary:function(n,g,first,last){ return 'Cenário Collatz n='+n+' · Política: '+document.getElementById('sel-policy').selectedOptions[0].text+' · Crescimento '+ (g>0?'+':'') + g.toFixed(1) + '% ('+first+' → '+last+' Bn USD)'; },
+  footer:'PEPA © — Plataforma de Economia Petrolífera Angolana · ML Analytics' };
+T.en={ tagline:'Angolan Petroleum Economics Platform',
+  kpi_gdp:'Angola GDP (2025)', kpi_barrel:'Barrel Price (2025)', kpi_r2sub:'Coefficient of determination (test)',
+  ctrl_title:'Simulation Settings', ctrl_collatz:'Collatz n', ctrl_policy:'Government Policy', ctrl_run:'Run Simulation',
+  policies:['Poor (-12%)','Moderate (0%)','Optimal (+8%)'],
+  hist_title:'Angola Historical Data (2000–2025)', hist_badge:'26 years',
+  th_year:'Year', th_gdp:'GDP (Bn$)', th_barrel:'Barrel ($)', th_prod:'Prod. (Kb/d)', th_fx:'Rate (AOA/$)', th_inf:'Inflation (%)', th_exp:'Oil Exp. (Bn$)',
+  chart_gdp:'Angola GDP — Evolution 2000-2025', chart_oil:'Barrel Price vs Oil Exports',
+  metrics_title:'ML Model Comparison', th_model:'Model', th_r2tr:'Train R²', th_r2te:'Test R²', th_rmse:'RMSE', th_mae:'MAE',
+  imp_title:'Feature Importance (Random Forest)', col_title:'Collatz Conjecture',
+  col_steps:'Steps', col_peak:'Peak', col_mean:'Mean',
+  fc_title:'OSEGI/IEPA Forecast 2027–2033', th_ens:'Ensemble', th_phase:'Phase',
+  phases:{peak:'Peak',normal:'Normal',trough:'Trough'},
+  summary:function(n,g,first,last){ return 'Collatz n='+n+' · Policy: '+document.getElementById('sel-policy').selectedOptions[0].text+' · Growth '+ (g>0?'+':'') + g.toFixed(1) + '% ('+first+' → '+last+' Bn USD)'; },
+  footer:'PEPA © — Angolan Petroleum Economics Platform · ML Analytics' };
+
+function setText(id,v){ var el=document.getElementById(id); if(el)el.textContent=v; }
+function renderStatic(){
+  var L=T[LANG]; document.documentElement.lang=LANG;
+  setText('tagline',L.tagline);
+  document.querySelectorAll('[data-i18n]').forEach(function(el){ var k=el.getAttribute('data-i18n'); if(L[k])el.textContent=L[k]; });
+  var sp=document.getElementById('sel-policy');
+  for(var i=0;i<3;i++) sp.options[i].text=L.policies[i];
+  LANG==='pt' ? (document.getElementById('btn-pt').classList.add('active'),document.getElementById('btn-en').classList.remove('active'))
+              : (document.getElementById('btn-en').classList.add('active'),document.getElementById('btn-pt').classList.remove('active'));
+}
+
+/* chart instances (reused on re-render) */
+var charts={};
+function makeChart(id,cfg){ if(charts[id])charts[id].destroy(); charts[id]=new Chart(document.getElementById(id),cfg); }
+var gdpChartData,oilChartData;
+
+/* ══════════════ 7. CONSTRUÇÃO DO RELATÓRIO ══════════════ */
+function runSimulation(){
+  var L=T[LANG];
+  var colN=parseInt(document.getElementById('sel-n').value,10);
+  var polMult=parseFloat(document.getElementById('sel-policy').value);
+  var seqFull=collatz(colN), seqMax=Math.max.apply(null,seqFull);
+  var nSteps=seqFull.length-1;
+
+  /* features: 7 económicas + 2 Collatz */
+  function feats(r){ var v=[r.barril,r.prod,r.cambio,r.inflacao,r.expPet,r.ide,r.pol]; return v; }
+  var Xtrain=[], y=PIB.slice();
+  DATA.forEach(function(r,i){ var cv=seqFull[i%seqFull.length];
+    Xtrain.push(feats(r).concat([cv/seqMax, cv%2===0?1:-1])); });
+
+  /* split temporal 80/20 */
+  var nCut=Math.floor(Xtrain.length*0.8);
+  var Xtr=Xtrain.slice(0,nCut), Xte=Xtrain.slice(nCut);
+  var ytr=y.slice(0,nCut), yte=y.slice(nCut);
+
+  /* padronização (média/desvio do treino) */
+  var nF=Xtr[0].length, mu=[], sg=[];
+  for(var j=0;j<nF;j++){ var col=Xtr.map(function(r){ return r[j]; }); mu.push(mean(col)); sg.push(sd(col)||1); }
+  function scaleRow(r){ return r.map(function(v,j){ return (v-mu[j])/sg[j]; }); }
+  var XtrS=Xtr.map(scaleRow), XteS=Xte.map(scaleRow);
+
+  /* Regressão Linear (OLS) sobre features padronizadas */
+  function withBias(X){ return X.map(function(r){ return [1].concat(r); }); }
+  var Xb=withBias(XtrS), XtX=[], Xty=[];
+  for(var a=0;a<nF+1;a++){ Xty.push(0); var row=[]; for(var b=0;b<nF+1;b++)row.push(0); XtX.push(row); }
+  for(var i=0;i<Xb.length;i++){ for(var a2=0;a2<nF+1;a2++){ Xty[a2]+=Xb[i][a2]*ytr[i];
+    for(var b2=0;b2<nF+1;b2++) XtX[a2][b2]+=Xb[i][a2]*Xb[i][b2]; } }
+  var beta=solve(XtX,Xty);
+  function lrPredict(r){ var s=beta[0], rs=scaleRow(r); for(var j=0;j<nF;j++)s+=beta[j+1]*rs[j]; return s; }
+  var lrTr=Xtr.map(lrPredict), lrTe=Xte.map(lrPredict);
+
+  /* Random Forest */
+  var rf=trainRF(Xtr,ytr,40,5);
+  var rfTr=Xtr.map(function(r){ return rf.predict(r); }), rfTe=Xte.map(function(r){ return rf.predict(r); });
+
+  /* Ensemble = média LR + RF */
+  var ensTr=lrTr.map(function(v,i){ return (v+rfTr[i])/2; });
+  var ensTe=lrTe.map(function(v,i){ return (v+rfTe[i])/2; });
+
+  /* KPIs */
+  setText('kpi-gdp', PIB[PIB.length-1].toFixed(1));
+  setText('kpi-barrel', '$'+BARREL[BARREL.length-1].toFixed(1));
+  setText('kpi-lr', r2(yte,lrTe).toFixed(4));
+  setText('kpi-rf', r2(yte,rfTe).toFixed(4));
+
+  /* Tabela de dados */
+  document.getElementById('data-table-body').innerHTML = DATA.map(function(r){
+    return '<tr><td class="val-gold">'+r.ano+'</td><td class="val-primary">'+r.pib+'</td><td>'+r.barril+'</td><td>'+r.prod.toLocaleString()+'</td><td>'+r.cambio.toLocaleString()+'</td><td>'+r.inflacao+'</td><td>'+r.expPet+'</td></tr>';
+  }).join('');
+
+  /* Tabela de métricas */
+  var rows=[['Linear Regression',lrTr,lrTe],['Random Forest',rfTr,rfTe],['Ensemble (LR+RF)',ensTr,ensTe]];
+  document.getElementById('metrics-body').innerHTML = rows.map(function(m){
+    return '<tr><td class="val-primary">'+m[0]+'</td><td>'+r2(ytr,m[1]).toFixed(4)+'</td><td>'+r2(yte,m[2]).toFixed(4)+'</td><td>'+rmse(yte,m[2]).toFixed(2)+'</td><td>'+mae(yte,m[2]).toFixed(2)+'</td></tr>';
+  }).join('');
+
+  /* Importância das features */
+  var labels=FEAT_LABELS[LANG];
+  var imps=rf.importance.map(function(v,i){ return {name:labels[i],val:v}; }).sort(function(a,b){ return b.val-a.val; }).slice(0,9);
+  document.getElementById('importance-bars').innerHTML = imps.map(function(f){
+    return '<div class="bar-item"><span class="bar-name">'+f.name+'</span><div class="bar-track"><div class="bar-fill" style="width:'+(f.val*100).toFixed(1)+'%"></div></div><span class="bar-val">'+(f.val*100).toFixed(1)+'%</span></div>';
+  }).join('');
+
+  /* Collatz: estatísticas + gráfico */
+  setText('col-steps', nSteps);
+  setText('col-peak', seqMax.toLocaleString());
+  setText('col-mean', mean(seqFull).toFixed(1));
+  var cColors=seqFull.map(function(v){ return v%2===0 ? '#4ade80' : '#e67e22'; });
+  makeChart('collatzChart',{ type:'bar',
+    data:{ labels:seqFull.map(function(_,i){ return i; }), datasets:[{ label:'Collatz('+colN+')', data:seqFull, backgroundColor:cColors, borderRadius:3 }] },
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ display:false } },
+      scales:{ x:{ ticks:{ color:'#888' } }, y:{ ticks:{ color:'#888' }, grid:{ color:'#222' } } } } });
+
+  /* Gráficos de dados */
+  makeChart('gdpChart',{ type:'line',
+    data:{ labels:YEARS, datasets:[{ label:'PIB (Bn USD)', data:PIB, borderColor:'#cc2222', backgroundColor:'rgba(204,34,34,0.15)', borderWidth:2, tension:0.35, fill:true, pointRadius:2 }] },
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ labels:{ color:'#888' } } },
+      scales:{ x:{ ticks:{ color:'#888', maxTicksLimit:8 }, grid:{ color:'#1a1a1a' } }, y:{ ticks:{ color:'#888' }, grid:{ color:'#222' } } } } });
+  makeChart('oilChart',{ type:'line',
+    data:{ labels:YEARS, datasets:[
+      { label:T[LANG].th_barrel, data:BARREL, borderColor:'#e67e22', borderWidth:2, tension:0.35, pointRadius:2, yAxisID:'y' },
+      { label:T[LANG].th_exp, data:EXP, borderColor:'#f5c518', borderWidth:2, tension:0.35, pointRadius:2, yAxisID:'y1' }] },
+    options:{ responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{ labels:{ color:'#888' } } },
+      scales:{ y:{ position:'left', ticks:{ color:'#888' }, grid:{ color:'#222' } },
+               y1:{ position:'right', ticks:{ color:'#888' }, grid:{ drawOnChartArea:false } },
+               x:{ ticks:{ color:'#888', maxTicksLimit:8 }, grid:{ color:'#1a1a1a' } } } } });
+
+  /* ══ PREVISÃO 2027-2033 (7 anos) ══ */
+  var FC_YEARS=[]; for(var yy=2027;yy<=2033;yy++)FC_YEARS.push(yy);
+  var ultimo=DATA[DATA.length-1];
+  var trends={};
+  ECON.forEach(function(k){ var vals=DATA.map(function(r){ return r[k]; }); trends[k]=(vals[vals.length-1]-vals[0])/(vals.length-1); });
+  var fcLR=[],fcRF=[],fcENS=[],fcRows=[];
+  FC_YEARS.forEach(function(yv){
+    var ahead=yv-YEARS[YEARS.length-1];
+    var proj={}; ECON.forEach(function(k){ proj[k]= (k==='pol') ? 0.5 : (ultimo[k]+trends[k]*ahead); });
+    var idx=(yv-2027)%seqFull.length, cVal=seqFull[idx], cNorm=cVal/seqMax;
+    var row=[proj.barril,proj.prod,proj.cambio,proj.inflacao,proj.expPet,proj.ide,proj.pol].concat([cNorm, cVal%2===0?1:-1]);
+    var lrV=lrPredict(row), rfV=rf.predict(row), ensV=(lrV+rfV)/2*polMult;
+    fcLR.push(lrV); fcRF.push(rfV); fcENS.push(ensV);
+    var phase=cNorm>0.7?'peak':cNorm<0.2?'trough':'normal';
+    fcRows.push({ano:yv,lr:lrV,rf:rfV,ens:ensV,cv:cVal,phase:phase});
+  });
+  setText('fc-badge','Collatz n='+colN+' · '+(seqFull.length-1)+' '+(LANG==='pt'?'passos':'steps'));
+  var Ph=T[LANG].phases;
+  document.getElementById('fc-body').innerHTML = fcRows.map(function(r){
+    var pcol=r.phase==='peak'?'val-gold':r.phase==='trough'?'':'val-green';
+    return '<tr><td class="val-gold">'+r.ano+'</td><td>'+r.lr.toFixed(2)+'</td><td>'+r.rf.toFixed(2)+'</td><td class="val-green">'+r.ens.toFixed(2)+'</td><td>'+r.cv+'</td><td class="'+pcol+'">'+Ph[r.phase]+'</td></tr>';
+  }).join('');
+  var growth=(fcENS[fcENS.length-1]-fcENS[0])/fcENS[0]*100;
+  document.getElementById('fc-summary').innerHTML = T[LANG].summary(colN,growth,fcENS[0].toFixed(1),fcENS[fcENS.length-1].toFixed(1));
+
+  var histYears=YEARS, allLabels=YEARS.concat(FC_YEARS);
+  var padHist=new Array(YEARS.length-1).fill(null);
+  makeChart('fcChart',{ type:'line',
+    data:{ labels:allLabels, datasets:[
+      { label:'Histórico', data:PIB.concat(new Array(FC_YEARS.length).fill(null)), borderColor:'#888', borderWidth:2, tension:0.3, pointRadius:2 },
+      { label:'LR', data:padHist.concat([PIB[PIB.length-1]],fcLR) , borderColor:'#e05050', borderWidth:1.6, borderDash:[5,4], pointRadius:2, tension:0.3 },
+      { label:'RF', data:padHist.concat([PIB[PIB.length-1]],fcRF), borderColor:'#e67e22', borderWidth:1.6, pointRadius:2, tension:0.3 },
+      { label:'Ensemble', data:padHist.concat([PIB[PIB.length-1]],fcENS), borderColor:'#f5c518', borderWidth:2.4, pointRadius:3, tension:0.3 }]},
+    options:{ responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{ labels:{ color:'#888' } } },
+      scales:{ x:{ ticks:{ color:'#888', maxTicksLimit:12 }, grid:{ color:'#1a1a1a' } },
+               y:{ ticks:{ color:'#888' }, grid:{ color:'#222' } } } } });
+}
+
+/* ══════════════ 8. INICIALIZAÇÃO ══════════════ */
+Chart.defaults.color='#888'; Chart.defaults.borderColor='#222';
+renderStatic();
+runSimulation();
+document.getElementById('btn-run').addEventListener('click',runSimulation);
+document.getElementById('sel-n').addEventListener('change',runSimulation);
+document.getElementById('sel-policy').addEventListener('change',runSimulation);
+document.getElementById('btn-pt').addEventListener('click',function(){ LANG='pt'; renderStatic(); runSimulation(); });
+document.getElementById('btn-en').addEventListener('click',function(){ LANG='en'; renderStatic(); runSimulation(); });
+</script>
+</body>
+</html>
